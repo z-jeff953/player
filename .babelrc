@@ -1,0 +1,9 @@
+{
+  "presets": [
+    "@babel/preset-env",
+    "@babel/preset-typescript"
+  ],
+  "plugins": [
+    // 可以添加其他需要的 Babel 插件
+  ]
+}
