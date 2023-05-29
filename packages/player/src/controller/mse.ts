@@ -1,105 +1,77 @@
-import EventEmitter from 'events'
+import { Player } from "../core";
 
-class MediaSourceController extends EventEmitter {
-  private mediaSource: MediaSource
-  private videoSourceBuffer: SourceBuffer | null
-  private audioSourceBuffer: SourceBuffer | null
+export class MediaSourceController {
+  public mediaSource: MediaSource;
 
-  constructor() {
-    super()
-    this.mediaSource = new MediaSource()
-    this.videoSourceBuffer = null
-    this.audioSourceBuffer = null
-    this.init()
-  }
 
-  async init() {
-    // 等待 MediaSource 打开
-    await this.mediaSource.open()
-    // 创建视频和音频的 SourceBuffer
-    this.videoSourceBuffer = this.mediaSource.addSourceBuffer(
-      'video/mp4; codecs="avc1.64001e"'
-    )
-    this.audioSourceBuffer = this.mediaSource.addSourceBuffer(
-      'audio/mp4; codecs="mp4a.40.2"'
-    )
-    // 监听 SourceBuffer 的更新事件
-    this.videoSourceBuffer.addEventListener(
-      'updateend',
-      this.onVideoSourceBufferUpdateEnd
-    )
-    this.audioSourceBuffer.addEventListener(
-      'updateend',
-      this.onAudioSourceBufferUpdateEnd
-    )
-  }
+  constructor(private player: Player) {
+    let hasWebKit = ('WebKitMediaSource' in window);
+    let hasMediaSource = ('MediaSource' in window);
 
-  // 向视频的 SourceBuffer 中追加媒体片段
-  async appendVideoMediaSegment(segment: ArrayBuffer) {
-    if (this.videoSourceBuffer) {
-      // 等待 SourceBuffer 就绪
-      await new Promise(resolve => {
-        if (this.videoSourceBuffer) {
-          if (this.videoSourceBuffer.updating) {
-            this.videoSourceBuffer.addEventListener(
-              'updateend',
-              () => {
-                resolve()
-              }
-            )
-          } else {
-            resolve()
-          }
-        } else {
-          resolve()
-        }
-      })
-      // 向 SourceBuffer 中追加视频数据
-      this.videoSourceBuffer.appendBuffer(segment)
+    if (hasMediaSource) {
+      this.mediaSource = new MediaSource();
+    } else if (hasWebKit) {
+      // @ts-ignore
+      this.mediaSource = new WebKitMediaSource();
     }
   }
 
-  // 向音频的 SourceBuffer 中追加媒体片段
-  async appendAudioMediaSegment(segment: ArrayBuffer) {
-    if (this.audioSourceBuffer) {
-      // 等待 SourceBuffer 就绪
-      await new Promise(resolve => {
-        if (this.audioSourceBuffer) {
-          if (this.audioSourceBuffer.updating) {
-            this.audioSourceBuffer.addEventListener(
-              'updateend',
-              () => {
-                resolve()
-              }
-            )
-          } else {
-            resolve()
-          }
-        } else {
-          resolve()
-        }
-      })
-      // 向 SourceBuffer 中追加音频数据
-      this.audioSourceBuffer.appendBuffer(segment)
+  public attachMediaSource(video: HTMLVideoElement) {
+    let objectURL = window.URL.createObjectURL(this.mediaSource);
+    video.src = objectURL;
+    return objectURL;
+  }
+
+  public detachMediaSource(video: HTMLVideoElement) {
+    video.removeAttribute('src');
+  }
+
+  public setDuration(value: number | null) {
+    if (!this.mediaSource || this.mediaSource.readyState !== 'open') return;
+    if (value === null || isNaN(value)) return;
+    if (this.mediaSource.duration === value) return;
+
+    if (!MediaSourceController.isBufferUpdating(this.mediaSource)) {
+      this.mediaSource.duration = value;
+    } else {
+      setTimeout(this.setDuration.bind(this, value), 50);
     }
   }
 
-  // 处理视频 SourceBuffer 更新完成事件
-  private onVideoSourceBufferUpdateEnd = () => {
-    this.emit('videoupdateend')
-  }
-
-  // 处理音频 SourceBuffer 更新完成事件
-  private onAudioSourceBufferUpdateEnd = () => {
-    this.emit('audioupdateend')
-  }
-
-  // 关闭 MediaSourceController
-  async close() {
-    if (this.mediaSource.readyState === 'open') {
-      await this.mediaSource.endOfStream()
+  public setSeekable(start: number, end: number) {
+    if (this.mediaSource && typeof this.mediaSource.setLiveSeekableRange === 'function' && typeof this.mediaSource.clearLiveSeekableRange === 'function' &&
+      this.mediaSource.readyState === 'open' && start >= 0 && start < end) {
+      this.mediaSource.clearLiveSeekableRange();
+      this.mediaSource.setLiveSeekableRange(start, end);
     }
+  }
+
+  static signalEndOfStream(source: MediaSource) {
+    if (!source || source.readyState !== 'open') {
+      return;
+    }
+
+    let buffers = source.sourceBuffers;
+
+    for (let i = 0; i < buffers.length; i++) {
+      if (buffers[i].updating) {
+        return;
+      }
+      if (buffers[i].buffered.length === 0) {
+        return;
+      }
+    }
+    source.endOfStream();
+  }
+
+  static isBufferUpdating(source: MediaSource) {
+    let buffers = source.sourceBuffers;
+    for (let i = 0; i < buffers.length; i++) {
+      if (buffers[i].updating) {
+        return true;
+      }
+    }
+    return false;
   }
 }
 
-export default MediaSourceController

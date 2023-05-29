@@ -1,4 +1,4 @@
-export type EVENTS = 'loadedmetadata'
+export type PlayerOriginEvents = 'loadedmetadata'
   | 'timeupdate'
   | 'play'
   | 'pause'

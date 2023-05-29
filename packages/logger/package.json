@@ -1,5 +1,5 @@
 {
-  "name": "@dash-vdk/player",
+  "name": "@dash-vdk/logger",
   "version": "0.0.0",
   "description": "> TODO: description",
   "author": "zjeff <1572754810@qq.com>",
@@ -13,14 +13,7 @@
   "scripts": {
     "test": "jest"
   },
-  "dependencies": {
-    "@dash-vdk/dash-parser": "*",
-    "@dash-vdk/dash": "*",
-    "@dash-vdk/tools": "*",
-    "ntouch.js": "^1.1.0"
-  },
   "devDependencies": {
-    "@types/x2js": "^3.1.0",
     "@jest/globals": "^29.5.0",
     "@types/jest": "^29.5.0",
     "jest": "^29.5.0",

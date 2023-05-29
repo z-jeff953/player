@@ -25,6 +25,7 @@ export class TypedMap<T extends MapKeyType = MapKeyType, TValue = any> {
   }
 }
 
+
 // 使用示例
 // 创建 TypedMap 实例
 // const map1 = new TypedMap<"key1" | "key2">();
@@ -37,3 +38,6 @@ export class TypedMap<T extends MapKeyType = MapKeyType, TValue = any> {
 
 // const mergedMap = map1.merge(map2); // 合并后的实例类型为 TypedMap<"key1" | "key2" | "key3" | "key4", any>
 // mergedMap.get("key3"); // 返回类型为 any | undefined
+
+
+// implement a map can register key of the map by type and offer type hint when get value

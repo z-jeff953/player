@@ -1,6 +1,5 @@
 // 引入 URI Util 模块中的函数
 import {
-  parseQueryString,
   stringifyQueryString,
   mergeQueryString
 } from './uri'
@@ -15,7 +14,7 @@ interface XHRConfig {
 }
 
 // XHR 类用于发送 XMLHttpRequest 请求
-function createXHR(
+function request(
   {
     url,
     method = 'GET',
@@ -46,7 +45,7 @@ function createXHR(
     xhr.open(_method, _url)
 
     // 监听 onload 事件，处理请求成功的情况
-    xhr.onload = function() {
+    xhr.onload = function () {
       if (xhr.status === 200 || xhr.status === 206) {
         resolve(xhr)
       } else {
@@ -66,43 +65,48 @@ function createXHR(
   }) as Promise<XMLHttpRequest>
 }
 
-const request = createXHR
-
 // fetchBuffer 函数以二进制格式请求指定 URL
-function fetchBuffer(url: string) {
-  return createXHR({ url }).then(xhr => xhr.response)
+function fetchBuffer(url: string): Promise<ArrayBuffer> {
+  return request({ url }).then(xhr => xhr.response)
 }
 
+
+function fetchXml(url: string) {
+  return request({ url, type: 'text' }).then(xhr => xhr.response)
+}
+
+
 // FnConfig 类型定义了可以传递给 get 和 post 函数的配置项
-type FnConfig = Omit<XHRConfig, 'method'> | string
+type RequestFnConfig = Omit<XHRConfig, 'method'> | string
 
 // get 函数用于发送 GET 请求
 function get(config: Omit<XHRConfig, 'method'> | string) {
   if (typeof config === 'string') {
-    return createXHR({ url: config })
+    return request({ url: config })
   }
   const _config: XHRConfig = { ...config }
   _config.method = 'GET'
-  return createXHR(_config)
+  return request(_config)
 }
 
 // post 函数用于发送 POST 请求
 function post(config: Omit<XHRConfig, 'method'> | string) {
   if (typeof config === 'string') {
-    return createXHR({ url: config })
+    return request({ url: config })
   }
   const _config: XHRConfig = { ...config }
   _config.method = 'POST'
-  return createXHR(_config)
+  return request(_config)
 }
 
 // 导出函数和接口
 export {
   get,
   post,
-  createXHR,
+  request as createXHR,
   fetchBuffer,
+  fetchXml,
   request,
   XHRConfig,
-  FnConfig
+  RequestFnConfig as FnConfig
 }

@@ -143,16 +143,16 @@ describe('EventEmitter', () => {
 
   test('merge() should work out when extends', () => {
     class Player<T extends EventsType = EventsType> extends EventEmitter<T> {
-      play() {
-        return "play"
-      }
+      constructor(public id: string) { super() };
+      play() { return "play" }
     }
-
-    const p1 = new Player<"e1" | "e2">()
-    const p2 = new Player<"e3" | "e4">()
+    const p1 = new Player<"e1" | "e2">("1")
+    const p2 = new Player<"e3" | "e4">("2")
 
     const p3 = p1.merge(p2) as Player
 
     expect(p3.play()).toEqual("play")
+    expect(p3.id).toEqual("1")
   });
+
 });

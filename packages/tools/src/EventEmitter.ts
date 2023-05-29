@@ -3,16 +3,24 @@ export interface Listener<T, K = any> {
   (event: T, ...args: K[]): any
 }
 
-export class Emitter<T extends EventsType = EventsType> {
+interface EmitterConfig {
+  onEveryEvent?: Listener<EventsType>
+}
+
+class Emitter<T extends EventsType = EventsType> {
   private listeners = new Map<T, Set<Listener<T>>>()
   private onceToWrapper = new Map<Listener<T>, Listener<T>>()
   private get eventNames() {
     return [...this.listeners.keys()]
   }
 
+
+  constructor(private emitterConfig: EmitterConfig = {}) {
+  }
+
   public merge<U extends EventsType, K extends Emitter>(
     ee: Emitter<U>
-  ): this {
+  ): Emitter<U | T> {
     const events = (ee.eventNames as unknown) as U[]
     events.forEach(event => {
       const listeners = ee.listeners.get(event as U)
@@ -53,53 +61,8 @@ export class Emitter<T extends EventsType = EventsType> {
         ee.removeAllListeners(event as U)
       }
     })
-    return this
+    return this as Emitter<U | T>
   }
-  // public merge<U extends EventsType>(
-  //   ee: EventEmitter<U>
-  // ): EventEmitter<T | U> {
-  //   const events = (ee.eventNames as unknown) as U[]
-  //   events.forEach(event => {
-  //     const listeners = ee.listeners.get(event as U)
-  //     const onceWrappers = ee.onceToWrapper
-  //     if (listeners) {
-  //       // 合并监听器到当前实例的监听器中
-  //       if (this.listeners.has((event as unknown) as T)) {
-  //         const existingListeners = this.listeners.get(
-  //           (event as unknown) as T
-  //         )!
-  //         listeners.forEach(listener =>
-  //           existingListeners.add(
-  //             (listener as unknown) as Listener<T>
-  //           )
-  //         )
-  //       } else {
-  //         this.listeners.set(
-  //           (event as unknown) as T,
-  //           (new Set(listeners) as unknown) as Set<Listener<T>>
-  //         )
-  //       }
-  //       // 合并 onceToWrapper
-  //       onceWrappers.forEach((wrapper, originalListener) => {
-  //         this.onceToWrapper.set(
-  //           (wrapper as unknown) as Listener<T>,
-  //           (originalListener as unknown) as Listener<T>
-  //         )
-  //         if (listeners.has(originalListener)) {
-  //           const existingListeners = this.listeners.get(
-  //             (event as unknown) as T
-  //           )!
-  //           existingListeners.add((wrapper as unknown) as Listener<T>)
-  //           listeners.delete(originalListener)
-  //           onceWrappers.delete(originalListener)
-  //         }
-  //       })
-  //       // 移除被合并的 EventEmitter 实例的监听器
-  //       ee.removeAllListeners(event as U)
-  //     }
-  //   })
-  //   return this as EventEmitter<T | U>
-  // }
 
   public removeAllListeners(event?: T): void {
     if (event === undefined) {
@@ -137,6 +100,9 @@ export class Emitter<T extends EventsType = EventsType> {
   }
 
   public emit(event: T, ...args: any[]): void {
+    if (this.emitterConfig?.onEveryEvent) {
+      this.emitterConfig.onEveryEvent.call(null, event, ...args)
+    }
     if (!this.listeners.has(event)) {
       return
     }
@@ -147,13 +113,17 @@ export class Emitter<T extends EventsType = EventsType> {
     }
   }
 
+  public emitNewEvent(event: EventsType, ...args: any[]): void {
+    this.emit(event as T, ...args)
+  }
+
   public onNewEvent<U extends EventsType>(
     event: U,
     callback: Listener<U>
   ): Emitter<T | U> {
     const ee = new Emitter<U>()
     ee.on(event, callback)
-    return this.merge(ee)
+    return this.merge(ee) as Emitter<T | U>
   }
 
   public onceNewEvent<U extends EventsType>(
@@ -162,7 +132,7 @@ export class Emitter<T extends EventsType = EventsType> {
   ): Emitter<T | U> {
     const ee = new Emitter<U>()
     ee.once(event, callback)
-    return this.merge(ee)
+    return this.merge(ee) as Emitter<T | U>
   }
 
   public off(event: T, callback: Listener<T>): void {
@@ -189,4 +159,10 @@ export class Emitter<T extends EventsType = EventsType> {
   public removeListener(event: T, callback: Listener<T>): void {
     this.off(event, callback)
   }
+}
+
+
+export {
+  Emitter, Emitter as EventEmitter,
+  Emitter as TypedEmitter
 }

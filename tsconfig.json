@@ -3,6 +3,7 @@
     "moduleResolution": "node",
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
+    "strictPropertyInitialization": false,
     "target": "es6",
     "module": "es6",
     "outDir": "dist",
