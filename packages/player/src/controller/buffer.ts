@@ -23,39 +23,48 @@ export class BufferController {
   }
 
   init() {
-    // this.mediaSource.addEventListener('sourceopen', () => {
-    // this.sourceBuffer && this.sourceBuffer.addEventListener('updateend', () => {
-    //   this.updating = false
-    //   if (this.queue.length > 0) {
-    //     this.appendBuffer(this.queue.shift()!)
-    //   }
-    // })
-    // if (this.queue.length > 0) {
-    //   this.appendBuffer(this.queue.shift()!)
-    // }
-
-    // })
+    this.mediaSource.addEventListener('sourceopen', () => {
+      this.sourceBuffer && this.sourceBuffer.addEventListener('updateend', () => {
+        this.updating = false
+        if (this.queue.length > 0) {
+          this.appendBuffer(this.queue.shift()!)
+        }
+      }, { once: true })
+    })
   }
 
   public appendBuffer(buffer: ArrayBuffer) {
-    this.sourceBuffer!.appendBuffer(buffer)
+    const _this = this
+    if (!_this.sourceBuffer) return
 
-    // if (!this.sourceBuffer) {
-    //   this.queue.push(buffer)
-    //   return
-    // }
-    // if (this.updating) {
-    //   this.queue.push(buffer)
-    //   return
-    // }
-    // try {
-    //   this.updating = true
-    //   this.sourceBuffer.appendBuffer(buffer)
-    // } catch (err) {
-    //   this.updating = false
-    //   this.queue.unshift(buffer)
-    //   console.warn('appendBuffer error', err)
-    // }
+    _this.queue.push(buffer)
+
+    _appendBuffer()
+
+    function _appendBuffer() {
+      if (_this.mediaSource.readyState !== 'open') {
+        _this.player.logger.warn('mediaSource.readyState is not open')
+        return
+      }
+
+      if (_this.queue.length === 0) return
+      if (_this.updating) {
+        setTimeout(() => {
+          _appendBuffer()
+        }, 10)
+      } else {
+        _this.updating = true
+        _this.sourceBuffer?.addEventListener('updateend', () => {
+          _this.updating = false
+          if (_this.queue.length > 0) {
+            setTimeout(() => {
+              _appendBuffer()
+            }, 10)
+          }
+        }, { once: true })
+        _this.sourceBuffer!.appendBuffer(_this.queue.shift()!)
+      }
+    }
   }
 
   public endOfStream() {
@@ -63,7 +72,7 @@ export class BufferController {
     try {
       this.sourceBuffer.addEventListener('updateend', () => {
         this.mediaSource.endOfStream()
-      })
+      }, { once: true })
       if (!this.updating) {
         this.mediaSource.endOfStream()
       }

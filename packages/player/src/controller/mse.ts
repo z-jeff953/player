@@ -46,6 +46,19 @@ export class MediaSourceController {
     }
   }
 
+
+  get state() {
+    return this.mediaSource.readyState
+  }
+
+  get duration() {
+    return this.mediaSource.duration
+  }
+
+  set duration(value) {
+    this.mediaSource.duration = value
+  }
+
   static signalEndOfStream(source: MediaSource) {
     if (!source || source.readyState !== 'open') {
       return;

@@ -21,6 +21,7 @@ export interface PlayerConfig {
     style?: Partial<CSSStyleDeclaration>;
   };
   addons?: PlayerAddon[];
+  showDefaultControl?: boolean;
 };
 
 export interface PlayerMiddleware<T> {
@@ -83,7 +84,6 @@ export class Player extends Component<PlayerOriginEvents> {
       const mpd = this.parseMpd(xml) as any;
 
       this.logger.info("parse mpd", mpd);
-      this.mediaEngine = new MediaEngine(this);
 
       const mediaModel: MediaModel = {
         video: {
@@ -98,10 +98,8 @@ export class Player extends Component<PlayerOriginEvents> {
         },
         duration: mpd.duration
       }
-      this.mediaEngine.setMediaModel(mediaModel);
+      this.mediaEngine = new MediaEngine(this, mediaModel);
 
-
-      this.logger.info("setMediaModel");
     });
   }
 
@@ -122,6 +120,7 @@ export class Player extends Component<PlayerOriginEvents> {
 
   play() {
     this.emit('play')
+    this.video.play();
   }
 
   pause() {

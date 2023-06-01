@@ -15,7 +15,7 @@ export class MediaEngine {
   player: Player;
   mediaModel: MediaModel;
 
-  constructor(player: Player) {
+  constructor(player: Player, mediaModel: MediaModel) {
     this.mediaSourceController = new MediaSourceController(player);
     this.requestController.video = new LoaderController(2, player);
     this.requestController.audio = new LoaderController(2, player);
@@ -23,33 +23,33 @@ export class MediaEngine {
 
     this.mediaSourceController.attachMediaSource(this.player.video);
 
-    this.mediaSourceController.mediaSource.addEventListener('sourceopen', () => {
+    this.mediaModel = mediaModel;
+
+    this.mediaSourceController.setDuration(this.mediaModel.duration);
+
+    this.mediaSourceController.mediaSource?.addEventListener("sourceopen", () => {
+      this.player.logger.info("video sourceopen");
+
+      this.mediaSourceController.setDuration(this.mediaModel.duration);
+
       this.load()
     });
-
-  }
-
-  public setMediaModel(mediaModel: MediaModel) {
-    this.mediaModel = mediaModel;
-    this.bufferController.video = new BufferController(this.mediaSourceController.mediaSource, {
-      type: 'video/mp4',
-      codecs: mediaModel.video.codecs
-    }, this.player);
-    this.bufferController.audio = new BufferController(this.mediaSourceController.mediaSource, {
-      type: 'audio/mp4',
-      codecs: mediaModel.audio.codecs
-    }, this.player);
-
-
-
-    console.log(this.bufferController.video?.sourceBuffer?.mode)
-    console.log(this.bufferController.audio?.sourceBuffer?.mode)
   }
 
   public load() {
     this.player.logger.info("load media");
 
-    const getTrackLoader = (track: TrackTypes) => {
+
+    this.bufferController.video = new BufferController(this.mediaSourceController.mediaSource, {
+      type: 'video/mp4',
+      codecs: this.mediaModel.video.codecs
+    }, this.player);
+    this.bufferController.audio = new BufferController(this.mediaSourceController.mediaSource, {
+      type: 'audio/mp4',
+      codecs: this.mediaModel.audio.codecs
+    }, this.player);
+
+    const getInitTrack = (track: TrackTypes) => {
 
       const requestController = this.requestController[track]!;
       const bufferController = this.bufferController[track]!;
@@ -63,21 +63,23 @@ export class MediaEngine {
         if (!bufferController?.initLoaded) {
           requestController.loadInitSegment(playList?.segments[0].map).then((buffer) => {
             this.player.logger.info(`loaded ${track} init segment: ${playList?.segments[0].map.uri}`);
-            buffer && bufferController?.sourceBuffer?.appendBuffer(buffer)
-            // buffer && bufferController?.appendBuffer(buffer)
+            // buffer && bufferController?.sourceBuffer?.appendBuffer(buffer)
+            buffer && bufferController?.appendBuffer(buffer)
           }).catch((err) => this.player.logger.error(err));
         }
 
         playList?.segments?.forEach((segment) => {
           requestController.loadSegment(segment).then((buffer) => {
             this.player.logger.info(`loaded ${track} segment: ${segment.uri}`);
-            buffer && bufferController?.sourceBuffer?.appendBuffer(buffer)
-            // buffer && bufferController?.appendBuffer(buffer)
+            // buffer && bufferController?.sourceBuffer?.appendBuffer(buffer)
+            buffer && bufferController?.appendBuffer(buffer)
           }).catch((err) => this.player.logger.error(err));
         });
       }
     }
-    getTrackLoader('video')();
-    getTrackLoader('audio')();
+    setTimeout(() => {
+      getInitTrack('video')();
+      getInitTrack('audio')();
+    }, 10);
   }
 }
