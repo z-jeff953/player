@@ -1,0 +1,1 @@
+export { IManifest as ManifestModel } from "@dash-vdk/parser"

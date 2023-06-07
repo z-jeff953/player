@@ -2,7 +2,7 @@ import { Player } from "../core";
 
 export interface BufferControllerConfig {
   type: string;
-  codecs: string[];
+  codecs: string;
 }
 
 export class BufferController {
@@ -17,8 +17,9 @@ export class BufferController {
     private config: BufferControllerConfig,
     private player: Player
   ) {
-    this.player.logger.info(`addSourceBuffer: ${this.config.type}; codecs="${this.config.codecs.join(',')}"`)
-    this.sourceBuffer = this.mediaSource.addSourceBuffer(`${this.config.type}; codecs="${this.config.codecs.join(',')}"`);
+    const bufferType = `${this.config.type}; codecs="${this.config.codecs}"`
+    this.player.logger.info(`addSourceBuffer: ${bufferType}`)
+    this.sourceBuffer = this.mediaSource.addSourceBuffer(bufferType);
     this.init();
   }
 

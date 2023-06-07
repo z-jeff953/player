@@ -61,9 +61,8 @@ export class MediaEngine {
         const playList = mediaModel.playlists?.[0];
 
         if (!bufferController?.initLoaded) {
-          requestController.loadInitSegment(playList?.segments[0].map).then((buffer) => {
-            this.player.logger.info(`loaded ${track} init segment: ${playList?.segments[0].map.uri}`);
-            // buffer && bufferController?.sourceBuffer?.appendBuffer(buffer)
+          requestController.loadSegment(playList?.initSegment).then((buffer) => {
+            this.player.logger.info(`loaded ${track} init segment: ${playList?.initSegment?.uri}`);
             buffer && bufferController?.appendBuffer(buffer)
           }).catch((err) => this.player.logger.error(err));
         }

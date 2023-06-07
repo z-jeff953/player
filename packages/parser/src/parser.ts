@@ -26,17 +26,17 @@ class Parser {
 
       if (adaptationElement) {
         let contentType = adaptationElement.getAttribute("contentType")!;
-        let representationElements = adaptationElement.querySelectorAll("Representation");
+        let representationElements = adaptationElement.querySelectorAll("Representation")!;
         let segmentTemplateElement = adaptationElement.querySelector("SegmentTemplate")!;
         let timelineElements = adaptationElement.querySelectorAll("S");
         let stream: IStream = manifest.streams[contentType] = {
           streamType: contentType,
-          mimeType: adaptationElement.getAttribute("mimeType") || "",
-          codecs: adaptationElement.getAttribute("codecs") || "",
+          mimeType: adaptationElement.getAttribute("mimeType") || representationElements[0].getAttribute("mimeType") || "",
+          codecs: adaptationElement.getAttribute("codecs") || representationElements[0].getAttribute("codecs") || "",
           initUrlFormat: segmentTemplateElement.getAttribute("initialization") || "",
           fragUrlFormat: segmentTemplateElement.getAttribute("media") || "",
           qualities: [],
-          timeline: []
+          timelines: []
         };
 
         let timeScale = Number(segmentTemplateElement.getAttribute("timescale"));
@@ -70,7 +70,7 @@ class Parser {
           let duration = Number(timelineElement.getAttribute("d"));
 
           for (i = 0; i <= repeatCount; i++) {
-            stream.timeline.push({
+            stream.timelines.push({
               start: startTime,
               startSeconds: startTime / timeScale,
               length: duration,
@@ -82,6 +82,7 @@ class Parser {
         }
       }
     }
+    return manifest
   }
 }
 

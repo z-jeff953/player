@@ -19,12 +19,11 @@ export interface IStream {
   initUrlFormat: string;
   fragUrlFormat: string;
   qualities: IQuality[];
-  timeline: ITimelineEntry[];
+  timelines: ITimelineEntry[];
 }
-
 
 export interface IManifest {
   baseUrl: string;
   mediaDuration: number;
-  streams: Record<string, IStream>;
+  streams: Record<"video" | "audio" | "text" | string, IStream>;
 }

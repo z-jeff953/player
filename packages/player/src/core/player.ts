@@ -2,13 +2,15 @@ import { PlayerOriginEvents } from '../constant/event'
 import { Component } from "./component";
 import { useMiddleware } from "./addons";
 import { Logger, logger } from "./logger";
-import { createEl, fetchBuffer, fetchXml } from "../util";
+import { createEl, fetchBuffer, fetchXml, getUrlBase } from "../util";
 import { MediaEngine } from "./media-engine"
-import parser from "@dash-vdk/dash"
+// import parser from "@dash-vdk/dash"
+import Parser from "@dash-vdk/parser"
 import { MediaModel } from '../model/media';
 
 export interface PlayerConfig {
   url?: string;
+  baseUrlOverride?: string;
   container?: HTMLElement;
   video?: HTMLVideoElement;
   post?: string;
@@ -81,23 +83,11 @@ export class Player extends Component<PlayerOriginEvents> {
 
 
     this.fetchMpd().then((xml) => {
-      const mpd = this.parseMpd(xml) as any;
+      const manifestModel = this.parseMpd(xml);
 
-      this.logger.info("parse mpd", mpd);
+      this.logger.info("parse mpd manifest", manifestModel);
 
-      const mediaModel: MediaModel = {
-        video: {
-          type: "video",
-          codecs: mpd.playlists[0].attributes.CODECS.split(','),
-          playlists: mpd.playlists,
-        },
-        audio: {
-          type: "audio",
-          codecs: mpd.mediaGroups.AUDIO.audio.und.playlists[0].attributes.CODECS.split(','),
-          playlists: mpd.mediaGroups.AUDIO.audio.und.playlists,
-        },
-        duration: mpd.duration
-      }
+      const mediaModel: MediaModel = MediaModel.fromManifestModel(manifestModel);
       this.mediaEngine = new MediaEngine(this, mediaModel);
 
     });
@@ -111,11 +101,13 @@ export class Player extends Component<PlayerOriginEvents> {
     return fetchXml(url);
   }
 
-
+  private _parser: Parser;
   parseMpd(xmlString: string) {
     const middleware = useMiddleware(this.config.addons ?? [], 'onInjectBeforeParsing') as unknown as PlayerMiddleware<any>
     const xml = middleware(xmlString);
-    return parser.parse(xml, { manifestUri: "https://jvp-1304649924.cos.ap-nanjing.myqcloud.com/mpd/input/input.mpd" });
+    const baseUrlOverride = this.config.baseUrlOverride ?? getUrlBase(this.config.url!);
+    const parser = this._parser ?? (this._parser = new Parser(baseUrlOverride));
+    return parser.parse(xml);
   }
 
   play() {
@@ -131,4 +123,10 @@ export class Player extends Component<PlayerOriginEvents> {
     plugin.install(this);
   }
 
+  fullscreen() {
+    this.video.requestFullscreen();
+  }
 }
+
+
+export default Player;

@@ -3,7 +3,7 @@
  * @file dom.js
  * @module dom
  */
-import fs from './fullscreen';
+import * as fs from './fullscreen';
 import { isObject } from './obj';
 import { IS_IOS } from './env';
 
